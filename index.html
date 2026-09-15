@@ -916,31 +916,6 @@
 
   var DEFAULT_CATEGORY_NAMES = ["School", "Sports", "Volunteering"];
   var FAMILY_MEMBERS = ["Sara", "Ben", "Connor", "Cris"];
-
-  // One-time carry-over of the contacts already saved on the Claude-hosted
-  // link, so the first person to open the Firebase-backed copy doesn't
-  // start from empty. Only used the very first time this Firebase project's
-  // Firestore is touched (guarded by the same meta/init check as category
-  // seeding) — safe to leave in place after that.
-  var IMPORT_CATEGORIES = [
-    { name: "Enmax" },
-    { name: "Sports" },
-    { name: "Hockey" },
-    { name: "Volunteering" },
-    { name: "School" }
-  ];
-  var IMPORT_CONTACTS = [
-    { parents: ["Chris", "Angela"], children: ["York"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442119266 },
-    { parents: ["Taryn Richards", "Tim Richards"], children: ["Cooper Richards"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442211012 },
-    { parents: ["Cory Deydey", "Andrea Deydey"], children: ["Jack Deydey", "Maria Deydey"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789441510121 },
-    { parents: ["Sandy Edmonson", "Courtney Edmonson"], children: ["Jack Edmonson"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442180640 },
-    { parents: ["Mark Kirby"], children: ["Beckett Kirby"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442298750 },
-    { parents: ["Neil Cummings", "Lindsay Cummings"], children: ["Allister Cummings"], areas: ["Enmax", "Hockey"], family: ["Ben", "Cris"], phone: "", email: "", notes: "", createdAt: 1789441823959 },
-    { parents: ["Scott Clark", "Jenna Clark"], children: ["Willa"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789441969119 },
-    { parents: ["Stacey Clark"], children: ["Holden"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442088138 },
-    { parents: ["Dave"], children: ["Finnegan"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789442018890 },
-    { parents: ["Tyler Penner", "Carly Penner"], children: ["William Penner"], areas: ["Hockey"], family: ["Ben"], phone: "", email: "", notes: "", createdAt: 1789440682617 }
-  ];
   var PERSON_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>';
   var AREA_VAR = { School: "--area-school", Sports: "--area-sports", Volunteering: "--area-volunteering" };
   var EXTRA_VARS = ["--area-extra-1", "--area-extra-2", "--area-extra-3", "--area-extra-4"];
@@ -1561,6 +1536,9 @@
     if (err.code === "auth/unauthorized-domain") {
       return "This site isn't authorized for Google sign-in yet — add it under Firebase Authentication settings.";
     }
+    if (err.code === "auth/missing-initial-state" || err.code === "auth/web-storage-unsupported") {
+      return "Google sign-in doesn't work yet from this app's home screen icon on iPhone. Open this page in Safari directly and sign in there instead.";
+    }
     return "Couldn't sign in — try again.";
   }
 
@@ -1610,8 +1588,7 @@
             if (!firebaseBackendActive) {
               firebaseBackendActive = true;
               setupDbBackend(firebase.firestore(), "Synced via Firebase", function () {
-                IMPORT_CATEGORIES.forEach(function (cat) { categoriesCollection.add(cat); });
-                IMPORT_CONTACTS.forEach(function (contact) { dbCollection.add(contact); });
+                DEFAULT_CATEGORY_NAMES.forEach(function (name) { categoriesCollection.add({ name: name }); });
               }, function (err) {
                 if (err && err.code === "permission-denied") {
                   denyAccess("That Google account isn't on the family list. Try a different one.");
