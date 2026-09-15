@@ -98,6 +98,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
 
   html, body {
     height: 100%;
@@ -651,6 +652,75 @@
     padding: 8px 0 2px;
   }
 
+  .sign-out-btn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding-top: 16px;
+    border: none;
+    border-top: 1px solid var(--line);
+    background: none;
+    color: var(--ink-faint);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+  .sign-out-btn:active { color: var(--danger); }
+
+  /* ---------- Auth gate ---------- */
+
+  .auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .auth-card h1 {
+    font-size: 1.7rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .auth-sub {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    margin: 0 0 24px;
+  }
+
+  .auth-error {
+    color: var(--danger);
+    font-size: 0.82rem;
+    text-align: center;
+    margin: -6px 0 14px;
+  }
+
+  .auth-submit {
+    width: 100%;
+    margin-top: 6px;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+  .auth-submit:active { transform: scale(0.98); }
+  .auth-submit:disabled { opacity: 0.6; }
+
   @media (prefers-reduced-motion: reduce) {
     .sheet, .scrim, .fab { transition: none; }
   }
@@ -746,8 +816,26 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>
+    <button type="button" class="sign-out-btn" id="signOutBtn" hidden>Sign out</button>
   </div>
 </form>
+
+<div class="auth-gate" id="authGate" hidden>
+  <form class="auth-card" id="authForm">
+    <h1>NamesApp</h1>
+    <p class="auth-sub">Sign in to see your family's shared contacts.</p>
+    <div class="field">
+      <label for="authEmail">Email</label>
+      <input id="authEmail" type="email" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="authPassword">Password</label>
+      <input id="authPassword" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="auth-error" id="authError" hidden></div>
+    <button type="submit" class="auth-submit" id="authSubmit">Sign in</button>
+  </form>
+</div>
 
 <!--
   Firebase (optional): fill in FIREBASE_CONFIG below with your project's
@@ -865,7 +953,14 @@
     closeCatsBtn: document.getElementById("closeCatsBtn"),
     categoryList: document.getElementById("categoryList"),
     newCategoryInput: document.getElementById("newCategoryInput"),
-    addCategoryBtn: document.getElementById("addCategoryBtn")
+    addCategoryBtn: document.getElementById("addCategoryBtn"),
+    signOutBtn: document.getElementById("signOutBtn"),
+    authGate: document.getElementById("authGate"),
+    authForm: document.getElementById("authForm"),
+    authEmail: document.getElementById("authEmail"),
+    authPassword: document.getElementById("authPassword"),
+    authError: document.getElementById("authError"),
+    authSubmit: document.getElementById("authSubmit")
   };
 
   var formAreas = [];
@@ -1312,6 +1407,8 @@
     render();
   }
 
+  var dbUnsubscribes = [];
+
   function setupDbBackend(db, syncLabel, seedFn) {
     state.mode = "db";
     dbCollection = db.collection("parents");
@@ -1326,7 +1423,7 @@
       }
     }).catch(function (err) { console.error("seed check failed", err); });
 
-    dbCollection.onSnapshot(function (snap) {
+    dbUnsubscribes.push(dbCollection.onSnapshot(function (snap) {
       state.records = snap.docs.map(function (d) {
         var data = Object.assign({ id: d.id }, d.data());
         if (!Array.isArray(data.parents)) {
@@ -1340,9 +1437,9 @@
     }, function (err) {
       console.error("db subscribe failed", err);
       fallbackToLocal();
-    });
+    }));
 
-    categoriesCollection.onSnapshot(function (snap) {
+    dbUnsubscribes.push(categoriesCollection.onSnapshot(function (snap) {
       state.categories = snap.docs.map(function (d) {
         return Object.assign({ id: d.id }, d.data());
       }).sort(function (a, b) { return a.name.localeCompare(b.name); });
@@ -1351,7 +1448,16 @@
       renderAreaChips();
     }, function (err) {
       console.error("categories subscribe failed", err);
-    });
+    }));
+  }
+
+  function teardownDbBackend() {
+    dbUnsubscribes.forEach(function (unsub) { unsub(); });
+    dbUnsubscribes = [];
+    dbCollection = null;
+    categoriesCollection = null;
+    state.records = [];
+    state.categories = [];
   }
 
   function tryClaudeArtifactDb() {
@@ -1369,18 +1475,64 @@
     });
   }
 
+  function showAuthGate() {
+    els.authGate.hidden = false;
+    els.signOutBtn.hidden = true;
+  }
+
+  function hideAuthGate() {
+    els.authGate.hidden = true;
+    els.authError.hidden = true;
+    els.authForm.reset();
+  }
+
+  function setAuthError(message) {
+    els.authError.textContent = message;
+    els.authError.hidden = false;
+  }
+
+  els.authForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    els.authSubmit.disabled = true;
+    els.authError.hidden = true;
+    firebase.auth().signInWithEmailAndPassword(els.authEmail.value.trim(), els.authPassword.value)
+      .catch(function (err) {
+        console.error("sign-in failed", err);
+        setAuthError(err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found"
+          ? "Wrong email or password."
+          : "Couldn't sign in — try again.");
+      })
+      .finally(function () { els.authSubmit.disabled = false; });
+  });
+
+  els.signOutBtn.addEventListener("click", function () {
+    firebase.auth().signOut();
+  });
+
   function initStorage() {
     if (typeof firebase !== "undefined" && firebaseConfigured()) {
       try {
         firebase.initializeApp(FIREBASE_CONFIG);
-        firebase.auth().signInAnonymously().then(function () {
-          setupDbBackend(firebase.firestore(), "Synced via Firebase", function () {
-            IMPORT_CATEGORIES.forEach(function (cat) { categoriesCollection.add(cat); });
-            IMPORT_CONTACTS.forEach(function (contact) { dbCollection.add(contact); });
-          });
-        }).catch(function (err) {
-          console.error("firebase sign-in failed", err);
-          tryClaudeArtifactDb();
+        var firebaseBackendActive = false;
+        firebase.auth().onAuthStateChanged(function (user) {
+          if (user) {
+            hideAuthGate();
+            els.signOutBtn.hidden = false;
+            if (!firebaseBackendActive) {
+              firebaseBackendActive = true;
+              setupDbBackend(firebase.firestore(), "Synced via Firebase", function () {
+                IMPORT_CATEGORIES.forEach(function (cat) { categoriesCollection.add(cat); });
+                IMPORT_CONTACTS.forEach(function (contact) { dbCollection.add(contact); });
+              });
+            }
+          } else {
+            if (firebaseBackendActive) {
+              firebaseBackendActive = false;
+              teardownDbBackend();
+              render();
+            }
+            showAuthGate();
+          }
         });
       } catch (err) {
         console.error("firebase init failed", err);

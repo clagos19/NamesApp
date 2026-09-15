@@ -48,33 +48,35 @@ Replace the placeholder values with the ones from your Firebase console. As soon
 1. In the Firebase console, open **Build → Firestore Database** → **Create database**.
 2. Choose **Start in production mode** (the security rules below handle access) and pick any location close to you.
 
-### 4. Turn on Anonymous sign-in
+### 4. Turn on Email/Password sign-in and create your accounts
 
-NamesApp signs each visitor in anonymously so Firestore's security rules have something to check, without making anyone create a password.
+NamesApp shows a sign-in screen and only lets in the specific people you create accounts for — nobody else, even if they find the URL.
 
 1. Open **Build → Authentication → Sign-in method**.
-2. Enable the **Anonymous** provider.
+2. Enable the **Email/Password** provider.
+3. Go to the **Users** tab (still under Authentication) → **Add user**. Add one entry for yourself and one for your wife, each with an email and a password you choose. These don't need to be real inboxes — they're just credentials for this app.
 
 ### 5. Set Firestore security rules
 
-Open **Build → Firestore Database → Rules** and use:
+Open **Build → Firestore Database → Rules** and use, with your two real emails from step 4 in place of the placeholders:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+        && request.auth.token.email in ["you@example.com", "wife@example.com"];
     }
   }
 }
 ```
 
-This lets anyone who can open the app (and gets an anonymous sign-in) read and write the shared contact list — good enough for sharing between family members, but not a lock on the data. Since your Firebase config will be visible to anyone who can see `index.html` (for example if this repo is public on GitHub), treat that as an open-ish door: keep the repository private if you'd rather not rely on the rules alone, or in the Google Cloud console restrict the API key to only work from your hosted domain (**APIs & Services → Credentials**).
+This is what actually keeps the data private: only someone signed in as one of those two email addresses can read or write anything, regardless of who has the URL or has seen the Firebase config in `index.html`. Click **Publish** after editing.
 
 ### 6. Share it
 
-Host `index.html` (see "Running it yourself" above) and send the URL to whoever you're sharing it with. Everyone who opens that URL sees and edits the same list of contacts and categories in real time — no login screen, no accounts to create.
+Host `index.html` (see "Running it yourself" above) and send the URL to your wife along with the login you created for her in step 4. Opening the URL shows a sign-in screen; after signing in, you both see and edit the same live list of contacts and categories. Signing out (from the pencil icon → Categories → Sign out) returns to that screen.
 
 ## What it does
 
