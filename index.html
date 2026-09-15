@@ -1009,6 +1009,7 @@
   var formFamily = [];
   var dbCollection = null;
   var categoriesCollection = null;
+  var resumeLoadingTimer = null;
 
   function escapeHtml(s) {
     return String(s || "").replace(/[&<>"']/g, function (c) {
@@ -1426,6 +1427,7 @@
 
   function hideLoadingScreen() {
     els.loadingScreen.hidden = true;
+    clearTimeout(resumeLoadingTimer);
   }
 
   function fallbackToLocal() {
@@ -1635,6 +1637,21 @@
     }
     tryClaudeArtifactDb();
   }
+
+  // Reopening an installed home-screen app usually resumes the exact
+  // page it froze when backgrounded rather than reloading it — the
+  // script never re-runs, so the loading screen shown on a fresh load
+  // never gets a chance to cover the reconnect. Show it again here for
+  // that case, covering whatever was last on screen until either a
+  // fresh snapshot confirms it (or updates it) or a short timeout runs
+  // out, so it never shows names from before the reconnect for long.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && state.mode === "db" && els.authGate.hidden) {
+      els.loadingScreen.hidden = false;
+      clearTimeout(resumeLoadingTimer);
+      resumeLoadingTimer = setTimeout(hideLoadingScreen, 1200);
+    }
+  });
 
   render();
   initStorage();
