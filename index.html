@@ -1506,13 +1506,36 @@
     firebase.auth().signOut();
   }
 
+  function googleSignInErrorMessage(err) {
+    if (err.code === "auth/unauthorized-domain") {
+      return "This site isn't authorized for Google sign-in yet — add it under Firebase Authentication settings.";
+    }
+    return "Couldn't sign in — try again.";
+  }
+
   els.googleSignInBtn.addEventListener("click", function () {
     els.authError.hidden = true;
-    firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(function (err) {
-      console.error("google sign-in failed", err);
-      setAuthError(err.code === "auth/unauthorized-domain"
-        ? "This site isn't authorized for Google sign-in yet — add it under Firebase Authentication settings."
-        : "Couldn't sign in — try again.");
+    var provider = new firebase.auth.GoogleAuthProvider();
+    // Popup avoids the cross-origin redirect hand-off between this app's
+    // domain and the Firebase authDomain, which browser storage
+    // partitioning (Safari ITP and similar) can silently drop when this
+    // app isn't hosted on a *.firebaseapp.com/*.web.app domain — that
+    // drop is what shows up as "picked an account, landed back on the
+    // login screen with no error." Redirect is kept only as a fallback
+    // for the narrow cases where a popup can't open at all.
+    firebase.auth().signInWithPopup(provider).catch(function (err) {
+      console.error("google popup sign-in failed", err);
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        return;
+      }
+      if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") {
+        firebase.auth().signInWithRedirect(provider).catch(function (err2) {
+          console.error("google redirect sign-in failed", err2);
+          setAuthError(googleSignInErrorMessage(err2));
+        });
+        return;
+      }
+      setAuthError(googleSignInErrorMessage(err));
     });
   });
 
@@ -1526,7 +1549,7 @@
         firebase.initializeApp(FIREBASE_CONFIG);
         firebase.auth().getRedirectResult().catch(function (err) {
           console.error("google redirect sign-in failed", err);
-          setAuthError("Couldn't sign in — try again.");
+          setAuthError(googleSignInErrorMessage(err));
         });
         var firebaseBackendActive = false;
         firebase.auth().onAuthStateChanged(function (user) {
