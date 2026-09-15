@@ -666,6 +666,42 @@
   }
   .sign-out-btn:active { color: var(--danger); }
 
+  /* ---------- Loading screen ---------- */
+
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .loading-screen h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .loading-spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    border-top-color: var(--ink);
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner { animation: none; }
+  }
+
   /* ---------- Auth gate ---------- */
 
   .auth-gate {
@@ -754,6 +790,11 @@
   <button class="fab" id="addBtn" aria-label="Add contact">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
   </button>
+</div>
+
+<div class="loading-screen" id="loadingScreen">
+  <h1>NamesApp</h1>
+  <div class="loading-spinner" aria-hidden="true"></div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -958,6 +999,7 @@
     newCategoryInput: document.getElementById("newCategoryInput"),
     addCategoryBtn: document.getElementById("addCategoryBtn"),
     signOutBtn: document.getElementById("signOutBtn"),
+    loadingScreen: document.getElementById("loadingScreen"),
     authGate: document.getElementById("authGate"),
     authError: document.getElementById("authError"),
     googleSignInBtn: document.getElementById("googleSignInBtn")
@@ -1382,6 +1424,10 @@
     }
   }
 
+  function hideLoadingScreen() {
+    els.loadingScreen.hidden = true;
+  }
+
   function fallbackToLocal() {
     state.mode = "local";
     try {
@@ -1405,6 +1451,7 @@
     }
     els.syncNote.textContent = "Saved on this device only";
     render();
+    hideLoadingScreen();
   }
 
   var dbUnsubscribes = [];
@@ -1437,6 +1484,7 @@
         return data;
       });
       render();
+      hideLoadingScreen();
     }, function (err) {
       console.error("db subscribe failed", err);
       onError(err);
@@ -1481,6 +1529,7 @@
   var pendingAuthError = null;
 
   function showAuthGate() {
+    hideLoadingScreen();
     els.authGate.hidden = false;
     els.signOutBtn.hidden = true;
     if (pendingAuthError) {
