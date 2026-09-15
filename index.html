@@ -193,15 +193,37 @@
 
   #search::placeholder { color: var(--ink-faint); }
 
+  .tabs-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding-bottom: 12px;
+  }
+
   .tabs {
     display: flex;
     gap: 6px;
-    margin: 14px 0 0;
-    padding-bottom: 12px;
+    flex: 1;
+    min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
   }
   .tabs::-webkit-scrollbar { display: none; }
+
+  .manage-btn {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .manage-btn:active { background: var(--paper-sunken); }
 
   .tab {
     flex: none;
@@ -285,30 +307,35 @@
   .parent-name {
     font-weight: 600;
     font-size: 0.98rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .child-name {
     font-size: 0.82rem;
     color: var(--ink-soft);
-    white-space: nowrap;
   }
-  .child-name::before { content: "· parent of "; }
 
   .card-meta {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 3px;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 5px;
     font-size: 0.78rem;
-    color: var(--ink-faint);
   }
 
   .area-chip {
-    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--c, var(--ink-faint));
     font-weight: 600;
+  }
+  .area-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c, var(--ink-faint));
+    flex: none;
   }
 
   .card-notes {
@@ -502,6 +529,93 @@
   }
   .new-area-input.show { display: block; }
 
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .name-row .name-input { flex: 1; }
+
+  .remove-row-btn {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--paper-sunken);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .remove-row-btn:active { background: var(--line); }
+
+  .add-row-btn {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: 0.84rem;
+    padding: 4px 2px;
+  }
+  .add-row-btn:active { color: var(--ink); }
+
+  .category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .category-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper-sunken);
+    border-radius: 10px;
+    padding: 9px 10px 9px 14px;
+  }
+  .category-row .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .category-row .cat-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .category-empty {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    padding: 6px 2px 4px;
+  }
+  .category-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .category-add-row input { flex: 1; }
+
+  .add-icon-btn {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .add-icon-btn:active { transform: scale(0.94); }
+
   .delete-row {
     margin-top: 6px;
     padding-top: 16px;
@@ -541,7 +655,12 @@
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M11 11L14.2 14.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       <input id="search" type="text" placeholder="Search parent, child, or area" autocomplete="off">
     </div>
-    <div class="tabs" id="tabs"></div>
+    <div class="tabs-row">
+      <div class="tabs" id="tabs"></div>
+      <button type="button" class="manage-btn" id="manageCatsBtn" aria-label="Manage categories">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20.5V17l10.5-10.5 3.5 3.5L7.5 20.5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 8l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+    </div>
   </header>
 
   <main id="main"></main>
@@ -561,18 +680,20 @@
   </div>
   <div class="sheet-body">
     <div class="field">
-      <label for="parentName">Parent name</label>
-      <input id="parentName" required autocomplete="off">
+      <label>Parents</label>
+      <div class="name-list" id="parentsList"></div>
+      <button type="button" class="add-row-btn" id="addParentBtn">+ Add another parent</button>
     </div>
     <div class="field">
-      <label for="childName">Child's name</label>
-      <input id="childName" autocomplete="off">
+      <label>Children</label>
+      <div class="name-list" id="childrenList"></div>
+      <button type="button" class="add-row-btn" id="addChildBtn">+ Add another child</button>
     </div>
     <div class="field">
-      <label>Area</label>
+      <label>Categories</label>
       <div class="chip-row" id="areaChips"></div>
       <div class="new-area-input" id="newAreaWrap">
-        <input id="newAreaInput" placeholder="Name this area, e.g. Chess Club">
+        <input id="newAreaInput" placeholder="Name this category, e.g. Chess Club">
       </div>
     </div>
     <div class="field">
@@ -594,13 +715,31 @@
   <div class="sync-note" id="syncNote"></div>
 </form>
 
+<form class="sheet" id="categorySheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h2>Categories</h2>
+    <button type="button" class="text-btn primary" id="closeCatsBtn">Done</button>
+  </div>
+  <div class="sheet-body">
+    <div class="category-list" id="categoryList"></div>
+    <div class="category-add-row">
+      <input id="newCategoryInput" placeholder="New category, e.g. Chess Club" autocomplete="off">
+      <button type="button" class="add-icon-btn" id="addCategoryBtn" aria-label="Add category">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</form>
+
 <script>
 (function () {
   "use strict";
 
-  var DEFAULT_AREAS = ["School", "Sports", "Volunteering"];
+  var DEFAULT_CATEGORY_NAMES = ["School", "Sports", "Volunteering"];
   var AREA_VAR = { School: "--area-school", Sports: "--area-sports", Volunteering: "--area-volunteering" };
   var EXTRA_VARS = ["--area-extra-1", "--area-extra-2", "--area-extra-3", "--area-extra-4"];
+  var X_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
   function areaVar(area) {
     if (AREA_VAR[area]) return AREA_VAR[area];
@@ -610,14 +749,15 @@
   }
 
   var EXAMPLES = [
-    { id: "ex1", parentName: "Dana Ruiz", childName: "Mateo", area: "School", phone: "", email: "", notes: "Room 12 class parent, example only", example: true },
-    { id: "ex2", parentName: "Priya Nandan", childName: "Ava", area: "Sports", phone: "", email: "", notes: "U8 soccer, Tuesday practices, example only", example: true },
-    { id: "ex3", parentName: "Marcus Webb", childName: "Ezra", area: "Volunteering", phone: "", email: "", notes: "Food pantry Saturdays, example only", example: true }
+    { id: "ex1", parents: ["Dana Ruiz"], children: ["Mateo"], areas: ["School"], phone: "", email: "", notes: "Room 12 class parent, example only", example: true },
+    { id: "ex2", parents: ["Priya Nandan", "Alex Nandan"], children: ["Ava", "Theo"], areas: ["Sports", "Volunteering"], phone: "", email: "", notes: "U8 soccer + snack duty, example only", example: true },
+    { id: "ex3", parents: ["Marcus Webb"], children: ["Ezra"], areas: ["Volunteering"], phone: "", email: "", notes: "Food pantry Saturdays, example only", example: true }
   ];
 
   var state = {
     mode: null,
     records: [],
+    categories: [],
     activeTab: "All",
     query: "",
     editingId: null
@@ -638,16 +778,25 @@
     areaChips: document.getElementById("areaChips"),
     newAreaWrap: document.getElementById("newAreaWrap"),
     newAreaInput: document.getElementById("newAreaInput"),
-    parentName: document.getElementById("parentName"),
-    childName: document.getElementById("childName"),
+    parentsList: document.getElementById("parentsList"),
+    addParentBtn: document.getElementById("addParentBtn"),
+    childrenList: document.getElementById("childrenList"),
+    addChildBtn: document.getElementById("addChildBtn"),
     phone: document.getElementById("phone"),
     email: document.getElementById("email"),
     notes: document.getElementById("notes"),
-    syncNote: document.getElementById("syncNote")
+    syncNote: document.getElementById("syncNote"),
+    manageCatsBtn: document.getElementById("manageCatsBtn"),
+    categorySheet: document.getElementById("categorySheet"),
+    closeCatsBtn: document.getElementById("closeCatsBtn"),
+    categoryList: document.getElementById("categoryList"),
+    newCategoryInput: document.getElementById("newCategoryInput"),
+    addCategoryBtn: document.getElementById("addCategoryBtn")
   };
 
-  var formArea = "School";
+  var formAreas = [];
   var dbCollection = null;
+  var categoriesCollection = null;
 
   function escapeHtml(s) {
     return String(s || "").replace(/[&<>"']/g, function (c) {
@@ -655,18 +804,59 @@
     });
   }
 
-  function knownAreas() {
-    var seen = {};
-    var list = [];
-    DEFAULT_AREAS.forEach(function (a) { if (!seen[a]) { seen[a] = true; list.push(a); } });
-    state.records.forEach(function (r) {
-      if (r.area && !seen[r.area]) { seen[r.area] = true; list.push(r.area); }
-    });
-    return list;
+  function normalizeRecord(r) {
+    if (Array.isArray(r.parents)) return r;
+    var migrated = {};
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) migrated[k] = r[k];
+    migrated.parents = r.parentName ? [r.parentName] : [];
+    migrated.children = r.childName ? [r.childName] : [];
+    migrated.areas = r.area ? [r.area] : [];
+    delete migrated.parentName;
+    delete migrated.childName;
+    delete migrated.area;
+    return migrated;
   }
+
+  function makeNameList(containerEl, addBtnEl, placeholder) {
+    function read() {
+      return Array.prototype.map.call(containerEl.querySelectorAll(".name-input"), function (inp) { return inp.value; });
+    }
+    function renderRows(values) {
+      var vals = values && values.length ? values : [""];
+      containerEl.innerHTML = vals.map(function (v, i) {
+        return '<div class="name-row"><input type="text" class="name-input" value="' + escapeHtml(v) + '" placeholder="' + escapeHtml(placeholder) + '" autocomplete="off">' +
+          '<button type="button" class="remove-row-btn" data-idx="' + i + '" aria-label="Remove">' + X_ICON + "</button></div>";
+      }).join("");
+      Array.prototype.forEach.call(containerEl.querySelectorAll(".remove-row-btn"), function (btn) {
+        btn.addEventListener("click", function () {
+          var current = read();
+          current.splice(Number(btn.getAttribute("data-idx")), 1);
+          renderRows(current);
+        });
+      });
+    }
+    addBtnEl.addEventListener("click", function () {
+      var current = read();
+      current.push("");
+      renderRows(current);
+      var inputs = containerEl.querySelectorAll(".name-input");
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+    return {
+      render: renderRows,
+      read: function () { return read().map(function (s) { return s.trim(); }).filter(Boolean); }
+    };
+  }
+
+  var parentsList = makeNameList(els.parentsList, els.addParentBtn, "Parent name");
+  var childrenList = makeNameList(els.childrenList, els.addChildBtn, "Child's name");
 
   function persistLocal() {
     try { localStorage.setItem("parentRosterData", JSON.stringify(state.records)); } catch (e) {}
+  }
+
+  function persistCategoriesLocal() {
+    try { localStorage.setItem("parentRosterCategories", JSON.stringify(state.categories)); } catch (e) {}
   }
 
   function render() {
@@ -681,8 +871,7 @@
   }
 
   function renderTabs() {
-    var areas = knownAreas();
-    var tabs = ["All"].concat(areas);
+    var tabs = ["All"].concat(state.categories.map(function (c) { return c.name; }));
     els.tabs.innerHTML = tabs.map(function (a) {
       var active = a === state.activeTab;
       var dotStyle = a === "All" ? "" : ' style="--tab-c: var(' + areaVar(a) + ')"';
@@ -699,33 +888,39 @@
   }
 
   function matchesFilters(r) {
-    if (state.activeTab !== "All" && r.area !== state.activeTab) return false;
+    if (state.activeTab !== "All" && (!r.areas || r.areas.indexOf(state.activeTab) === -1)) return false;
     if (!state.query) return true;
     var q = state.query.toLowerCase();
-    return (r.parentName || "").toLowerCase().indexOf(q) !== -1 ||
-      (r.childName || "").toLowerCase().indexOf(q) !== -1 ||
-      (r.area || "").toLowerCase().indexOf(q) !== -1 ||
-      (r.notes || "").toLowerCase().indexOf(q) !== -1;
+    var haystack = [].concat(r.parents || [], r.children || [], r.areas || [], [r.notes || ""]).join(" • ").toLowerCase();
+    return haystack.indexOf(q) !== -1;
   }
 
   function cardHtml(r) {
-    var v = areaVar(r.area || "");
+    var areas = r.areas || [];
+    var accentStyle = areas.length ? "--accent: var(" + areaVar(areas[0]) + ");" : "";
+    var primaryName = (r.parents && r.parents[0]) || "Unnamed";
     var actions = "";
     if (r.phone) {
-      actions += '<a class="icon-btn" href="tel:' + escapeHtml(r.phone) + '" aria-label="Call ' + escapeHtml(r.parentName) + '" onclick="event.stopPropagation()">' +
+      actions += '<a class="icon-btn" href="tel:' + escapeHtml(r.phone) + '" aria-label="Call ' + escapeHtml(primaryName) + '" onclick="event.stopPropagation()">' +
         '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.2c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z" fill="currentColor"/></svg></a>';
     }
     if (r.email) {
-      actions += '<a class="icon-btn" href="mailto:' + escapeHtml(r.email) + '" aria-label="Email ' + escapeHtml(r.parentName) + '" onclick="event.stopPropagation()">' +
+      actions += '<a class="icon-btn" href="mailto:' + escapeHtml(r.email) + '" aria-label="Email ' + escapeHtml(primaryName) + '" onclick="event.stopPropagation()">' +
         '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-11z" stroke="currentColor" stroke-width="1.5"/><path d="M4 6.5l8 6 8-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>';
     }
-    return '<div class="card' + (r.example ? " is-example" : "") + '" style="--accent: var(' + v + ')" data-id="' + escapeHtml(r.id) + '">' +
+    var parentsText = (r.parents && r.parents.length) ? r.parents.join(" & ") : "Unnamed";
+    var childrenText = (r.children && r.children.length) ? r.children.join(", ") : "";
+    var childPrefix = "· " + ((r.parents && r.parents.length > 1) ? "parents of " : "parent of ");
+    var areaChips = areas.map(function (a) {
+      return '<span class="area-chip" style="--c: var(' + areaVar(a) + ')"><span class="dot"></span>' + escapeHtml(a) + "</span>";
+    }).join("");
+    return '<div class="card' + (r.example ? " is-example" : "") + '" style="' + accentStyle + '" data-id="' + escapeHtml(r.id) + '">' +
       '<div class="card-main">' +
         '<div class="card-names">' +
-          '<span class="parent-name">' + escapeHtml(r.parentName) + "</span>" +
-          (r.childName ? '<span class="child-name">' + escapeHtml(r.childName) + "</span>" : "") +
+          '<span class="parent-name">' + escapeHtml(parentsText) + "</span>" +
+          (childrenText ? '<span class="child-name">' + childPrefix + escapeHtml(childrenText) + "</span>" : "") +
         "</div>" +
-        '<div class="card-meta"><span class="area-chip">' + escapeHtml(r.area || "Other") + "</span></div>" +
+        (areaChips ? '<div class="card-meta">' + areaChips + "</div>" : "") +
         (r.notes ? '<div class="card-notes">' + escapeHtml(r.notes) + "</div>" : "") +
       "</div>" +
       '<div class="card-actions">' + actions + "</div>" +
@@ -736,7 +931,9 @@
     var usingExamples = state.records.length === 0;
     var source = usingExamples ? EXAMPLES : state.records;
     var filtered = source.filter(matchesFilters).slice().sort(function (a, b) {
-      return (a.parentName || "").localeCompare(b.parentName || "");
+      var an = (a.parents && a.parents[0]) || "";
+      var bn = (b.parents && b.parents[0]) || "";
+      return an.localeCompare(bn);
     });
 
     if (state.records.length === 0) {
@@ -763,18 +960,19 @@
   // ---------- Sheet ----------
 
   function renderAreaChips() {
-    var areas = knownAreas();
-    els.areaChips.innerHTML = areas.map(function (a) {
-      var sel = a === formArea;
+    var known = state.categories.map(function (c) { return c.name; });
+    var pending = formAreas.filter(function (a) { return known.indexOf(a) === -1; });
+    var names = known.concat(pending);
+    els.areaChips.innerHTML = names.map(function (a) {
+      var sel = formAreas.indexOf(a) !== -1;
       return '<button type="button" class="chip-select' + (sel ? " selected" : "") + '" data-area="' + escapeHtml(a) + '" style="--chip-c: var(' + areaVar(a) + ')"><span class="dot"></span>' + escapeHtml(a) + "</button>";
-    }).join("") + '<button type="button" class="chip-select" id="otherAreaChip"' +
-      (!areas.includes(formArea) ? ' style="background:var(--ink);border-color:var(--ink);color:var(--paper)"' : "") +
-      ">Other…</button>";
+    }).join("") + '<button type="button" class="chip-select" id="otherAreaChip">+ New</button>';
 
     Array.prototype.forEach.call(els.areaChips.querySelectorAll(".chip-select[data-area]"), function (btn) {
       btn.addEventListener("click", function () {
-        formArea = btn.getAttribute("data-area");
-        els.newAreaWrap.classList.remove("show");
+        var name = btn.getAttribute("data-area");
+        var idx = formAreas.indexOf(name);
+        if (idx === -1) formAreas.push(name); else formAreas.splice(idx, 1);
         renderAreaChips();
       });
     });
@@ -784,22 +982,40 @@
     });
   }
 
+  function commitNewArea() {
+    var name = els.newAreaInput.value.trim();
+    els.newAreaWrap.classList.remove("show");
+    if (!name) return;
+    addCategory(name);
+    if (formAreas.indexOf(name) === -1) formAreas.push(name);
+    els.newAreaInput.value = "";
+    renderAreaChips();
+  }
+
+  els.newAreaInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); commitNewArea(); }
+  });
+  els.newAreaInput.addEventListener("blur", commitNewArea);
+
   function openSheet(title, record) {
     state.editingId = record ? record.id : null;
     els.sheetTitle.textContent = title;
-    els.parentName.value = record ? record.parentName || "" : "";
-    els.childName.value = record ? record.childName || "" : "";
+    parentsList.render(record && record.parents && record.parents.length ? record.parents : [""]);
+    childrenList.render(record && record.children ? record.children : []);
     els.phone.value = record ? record.phone || "" : "";
     els.email.value = record ? record.email || "" : "";
     els.notes.value = record ? record.notes || "" : "";
-    formArea = record ? (record.area || "School") : (state.activeTab !== "All" ? state.activeTab : "School");
+    formAreas = record ? (record.areas ? record.areas.slice() : []) : (state.activeTab !== "All" ? [state.activeTab] : []);
     els.newAreaInput.value = "";
     els.newAreaWrap.classList.remove("show");
     els.deleteRow.style.display = record ? "block" : "none";
     renderAreaChips();
     els.scrim.classList.add("open");
     els.sheet.classList.add("open");
-    setTimeout(function () { els.parentName.focus(); }, 250);
+    setTimeout(function () {
+      var firstInput = els.parentsList.querySelector(".name-input");
+      if (firstInput) firstInput.focus();
+    }, 250);
   }
 
   function closeSheet() {
@@ -815,22 +1031,24 @@
 
   els.addBtn.addEventListener("click", function () { openSheet("Add contact", null); });
   els.cancelBtn.addEventListener("click", closeSheet);
-  els.scrim.addEventListener("click", closeSheet);
+  els.scrim.addEventListener("click", function () { closeSheet(); closeCategorySheet(); });
 
   els.sheet.addEventListener("submit", function (e) {
     e.preventDefault();
-    var area = els.newAreaWrap.classList.contains("show") && els.newAreaInput.value.trim()
-      ? els.newAreaInput.value.trim()
-      : formArea;
+    var parents = parentsList.read();
+    if (!parents.length) {
+      var firstInput = els.parentsList.querySelector(".name-input");
+      if (firstInput) firstInput.focus();
+      return;
+    }
     var data = {
-      parentName: els.parentName.value.trim(),
-      childName: els.childName.value.trim(),
-      area: area || "Other",
+      parents: parents,
+      children: childrenList.read(),
+      areas: formAreas.slice(),
       phone: els.phone.value.trim(),
       email: els.email.value.trim(),
       notes: els.notes.value.trim()
     };
-    if (!data.parentName) { els.parentName.focus(); return; }
     if (state.editingId) {
       updateRecord(state.editingId, data);
     } else {
@@ -848,6 +1066,93 @@
     state.query = els.search.value;
     renderList();
   });
+
+  // ---------- Category management ----------
+
+  function renderCategoryList() {
+    if (!state.categories.length) {
+      els.categoryList.innerHTML = '<div class="category-empty">No categories yet — add one below.</div>';
+      return;
+    }
+    els.categoryList.innerHTML = state.categories.map(function (c) {
+      return '<div class="category-row"><span class="dot" style="background: var(' + areaVar(c.name) + ')"></span>' +
+        '<span class="cat-name">' + escapeHtml(c.name) + "</span>" +
+        '<button type="button" class="remove-row-btn" data-id="' + escapeHtml(c.id) + '" aria-label="Delete ' + escapeHtml(c.name) + '">' + X_ICON + "</button></div>";
+    }).join("");
+    Array.prototype.forEach.call(els.categoryList.querySelectorAll(".remove-row-btn"), function (btn) {
+      btn.addEventListener("click", function () {
+        var cat = state.categories.filter(function (c) { return c.id === btn.getAttribute("data-id"); })[0];
+        if (cat) deleteCategory(cat);
+      });
+    });
+  }
+
+  function openCategorySheet() {
+    renderCategoryList();
+    els.newCategoryInput.value = "";
+    els.scrim.classList.add("open");
+    els.categorySheet.classList.add("open");
+  }
+
+  function closeCategorySheet() {
+    els.scrim.classList.remove("open");
+    els.categorySheet.classList.remove("open");
+  }
+
+  els.manageCatsBtn.addEventListener("click", openCategorySheet);
+  els.closeCatsBtn.addEventListener("click", closeCategorySheet);
+
+  els.categorySheet.addEventListener("submit", function (e) {
+    e.preventDefault();
+    addCategory(els.newCategoryInput.value);
+    els.newCategoryInput.value = "";
+    els.newCategoryInput.focus();
+  });
+  els.addCategoryBtn.addEventListener("click", function () {
+    addCategory(els.newCategoryInput.value);
+    els.newCategoryInput.value = "";
+    els.newCategoryInput.focus();
+  });
+
+  function addCategory(name) {
+    name = (name || "").trim();
+    if (!name) return;
+    var existing = state.categories.filter(function (c) { return c.name.toLowerCase() === name.toLowerCase(); })[0];
+    if (existing) return;
+    if (state.mode === "db" && categoriesCollection) {
+      categoriesCollection.add({ name: name }).catch(function (err) { console.error("add category failed", err); });
+    } else {
+      state.categories.push({ id: "cat-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6), name: name });
+      state.categories.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      persistCategoriesLocal();
+      render();
+      renderCategoryList();
+    }
+  }
+
+  function deleteCategory(cat) {
+    var used = state.records.filter(function (r) { return r.areas && r.areas.indexOf(cat.name) !== -1; }).length;
+    var msg = used > 0
+      ? 'Delete "' + cat.name + '"? It will be removed from ' + used + " contact" + (used === 1 ? "" : "s") + "."
+      : 'Delete "' + cat.name + '"?';
+    if (!window.confirm(msg)) return;
+    state.records.forEach(function (r) {
+      if (r.areas && r.areas.indexOf(cat.name) !== -1) {
+        updateRecord(r.id, { areas: r.areas.filter(function (a) { return a !== cat.name; }) });
+      }
+    });
+    if (state.mode === "db" && categoriesCollection) {
+      categoriesCollection.doc(cat.id).delete().catch(function (err) { console.error("delete category failed", err); });
+    } else {
+      state.categories = state.categories.filter(function (c) { return c.id !== cat.id; });
+      persistCategoriesLocal();
+      render();
+      renderCategoryList();
+    }
+    var idx = formAreas.indexOf(cat.name);
+    if (idx !== -1) { formAreas.splice(idx, 1); renderAreaChips(); }
+    if (state.activeTab === cat.name) { state.activeTab = "All"; }
+  }
 
   // ---------- Storage ----------
 
@@ -888,9 +1193,23 @@
   function fallbackToLocal() {
     state.mode = "local";
     try {
-      state.records = JSON.parse(localStorage.getItem("parentRosterData") || "[]");
+      state.records = JSON.parse(localStorage.getItem("parentRosterData") || "[]").map(normalizeRecord);
     } catch (e) {
       state.records = [];
+    }
+    persistLocal();
+    if (localStorage.getItem("parentRosterMetaInit")) {
+      try {
+        state.categories = JSON.parse(localStorage.getItem("parentRosterCategories") || "[]");
+      } catch (e) {
+        state.categories = [];
+      }
+    } else {
+      state.categories = DEFAULT_CATEGORY_NAMES.map(function (name) {
+        return { id: "cat-" + name.toLowerCase(), name: name };
+      });
+      persistCategoriesLocal();
+      try { localStorage.setItem("parentRosterMetaInit", "1"); } catch (e) {}
     }
     els.syncNote.textContent = "Saved on this device only";
     render();
@@ -905,15 +1224,42 @@
       if (!db) { fallbackToLocal(); return; }
       state.mode = "db";
       dbCollection = db.collection("parents");
+      categoriesCollection = db.collection("categories");
       els.syncNote.textContent = "Synced";
+
+      var metaRef = db.doc("meta/init");
+      metaRef.get().then(function (snap) {
+        if (!snap.exists) {
+          DEFAULT_CATEGORY_NAMES.forEach(function (name) { categoriesCollection.add({ name: name }); });
+          metaRef.set({ categoriesSeeded: true, seededAt: Date.now() });
+        }
+      }).catch(function (err) { console.error("seed check failed", err); });
+
       dbCollection.onSnapshot(function (snap) {
         state.records = snap.docs.map(function (d) {
-          return Object.assign({ id: d.id }, d.data());
+          var data = Object.assign({ id: d.id }, d.data());
+          if (!Array.isArray(data.parents)) {
+            var migrated = normalizeRecord(data);
+            dbCollection.doc(d.id).set(migrated).catch(function (err) { console.error("migrate failed", err); });
+            data = migrated;
+          }
+          return data;
         });
         render();
       }, function (err) {
         console.error("db subscribe failed", err);
         fallbackToLocal();
+      });
+
+      categoriesCollection.onSnapshot(function (snap) {
+        state.categories = snap.docs.map(function (d) {
+          return Object.assign({ id: d.id }, d.data());
+        }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+        render();
+        renderCategoryList();
+        renderAreaChips();
+      }, function (err) {
+        console.error("categories subscribe failed", err);
       });
     }).catch(function () {
       fallbackToLocal();
