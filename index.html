@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Parent Roster</title>
+<title>NamesApp</title>
 <meta name="description" content="A mobile directory for tracking parent contacts across school, sports, volunteering, and any other area of your kids' lives.">
 <meta name="theme-color" content="#eef1ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12100d" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Roster">
+<meta name="apple-mobile-web-app-title" content="NamesApp">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -661,7 +661,7 @@
 <div id="app">
   <header>
     <div class="title-row">
-      <h1>Parent Roster</h1>
+      <h1>NamesApp</h1>
       <span class="count-badge" id="countBadge">0 saved</span>
     </div>
     <div class="search-wrap">
@@ -749,9 +749,38 @@
   </div>
 </form>
 
+<!--
+  Firebase (optional): fill in FIREBASE_CONFIG below with your project's
+  web app config to sync contacts between devices/people instead of
+  storing them only on this device. See README.md for full setup steps.
+  The Firebase scripts below load from Firebase's own CDN and are
+  simply skipped (no error) if that host is unreachable, such as
+  inside a Claude Artifact preview.
+-->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
 <script>
 (function () {
   "use strict";
+
+  // Fill these in with your Firebase project's web app config (Project
+  // settings > General > Your apps > SDK setup and configuration) to
+  // sync contacts across devices and people. Leave the placeholders as
+  // they are to keep using on-device storage only. See README.md.
+  var FIREBASE_CONFIG = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  function firebaseConfigured() {
+    return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("YOUR_") !== 0);
+  }
 
   var DEFAULT_CATEGORY_NAMES = ["School", "Sports", "Volunteering"];
   var FAMILY_MEMBERS = ["Sara", "Ben", "Connor", "Cris"];
@@ -1258,55 +1287,78 @@
     render();
   }
 
-  function initStorage() {
+  function setupDbBackend(db, syncLabel) {
+    state.mode = "db";
+    dbCollection = db.collection("parents");
+    categoriesCollection = db.collection("categories");
+    els.syncNote.textContent = syncLabel;
+
+    var metaRef = db.doc("meta/init");
+    metaRef.get().then(function (snap) {
+      if (!snap.exists) {
+        DEFAULT_CATEGORY_NAMES.forEach(function (name) { categoriesCollection.add({ name: name }); });
+        metaRef.set({ categoriesSeeded: true, seededAt: Date.now() });
+      }
+    }).catch(function (err) { console.error("seed check failed", err); });
+
+    dbCollection.onSnapshot(function (snap) {
+      state.records = snap.docs.map(function (d) {
+        var data = Object.assign({ id: d.id }, d.data());
+        if (!Array.isArray(data.parents)) {
+          var migrated = normalizeRecord(data);
+          dbCollection.doc(d.id).set(migrated).catch(function (err) { console.error("migrate failed", err); });
+          data = migrated;
+        }
+        return data;
+      });
+      render();
+    }, function (err) {
+      console.error("db subscribe failed", err);
+      fallbackToLocal();
+    });
+
+    categoriesCollection.onSnapshot(function (snap) {
+      state.categories = snap.docs.map(function (d) {
+        return Object.assign({ id: d.id }, d.data());
+      }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+      render();
+      renderCategoryList();
+      renderAreaChips();
+    }, function (err) {
+      console.error("categories subscribe failed", err);
+    });
+  }
+
+  function tryClaudeArtifactDb() {
     if (typeof window.claude === "undefined" || typeof window.claude.use !== "function") {
       fallbackToLocal();
       return;
     }
     window.claude.use("db").then(function (db) {
       if (!db) { fallbackToLocal(); return; }
-      state.mode = "db";
-      dbCollection = db.collection("parents");
-      categoriesCollection = db.collection("categories");
-      els.syncNote.textContent = "Synced";
-
-      var metaRef = db.doc("meta/init");
-      metaRef.get().then(function (snap) {
-        if (!snap.exists) {
-          DEFAULT_CATEGORY_NAMES.forEach(function (name) { categoriesCollection.add({ name: name }); });
-          metaRef.set({ categoriesSeeded: true, seededAt: Date.now() });
-        }
-      }).catch(function (err) { console.error("seed check failed", err); });
-
-      dbCollection.onSnapshot(function (snap) {
-        state.records = snap.docs.map(function (d) {
-          var data = Object.assign({ id: d.id }, d.data());
-          if (!Array.isArray(data.parents)) {
-            var migrated = normalizeRecord(data);
-            dbCollection.doc(d.id).set(migrated).catch(function (err) { console.error("migrate failed", err); });
-            data = migrated;
-          }
-          return data;
-        });
-        render();
-      }, function (err) {
-        console.error("db subscribe failed", err);
-        fallbackToLocal();
-      });
-
-      categoriesCollection.onSnapshot(function (snap) {
-        state.categories = snap.docs.map(function (d) {
-          return Object.assign({ id: d.id }, d.data());
-        }).sort(function (a, b) { return a.name.localeCompare(b.name); });
-        render();
-        renderCategoryList();
-        renderAreaChips();
-      }, function (err) {
-        console.error("categories subscribe failed", err);
-      });
+      setupDbBackend(db, "Synced");
     }).catch(function () {
       fallbackToLocal();
     });
+  }
+
+  function initStorage() {
+    if (typeof firebase !== "undefined" && firebaseConfigured()) {
+      try {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        firebase.auth().signInAnonymously().then(function () {
+          setupDbBackend(firebase.firestore(), "Synced via Firebase");
+        }).catch(function (err) {
+          console.error("firebase sign-in failed", err);
+          tryClaudeArtifactDb();
+        });
+      } catch (err) {
+        console.error("firebase init failed", err);
+        tryClaudeArtifactDb();
+      }
+      return;
+    }
+    tryClaudeArtifactDb();
   }
 
   render();

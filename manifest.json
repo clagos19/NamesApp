@@ -1,6 +1,6 @@
 {
-  "name": "Parent Roster",
-  "short_name": "Roster",
+  "name": "NamesApp",
+  "short_name": "NamesApp",
   "description": "A mobile directory for tracking parent contacts across school, sports, volunteering, and any other area of your kids' lives.",
   "start_url": "./index.html",
   "scope": "./",
