@@ -48,17 +48,19 @@ Replace the placeholder values with the ones from your Firebase console. As soon
 1. In the Firebase console, open **Build → Firestore Database** → **Create database**.
 2. Choose **Start in production mode** (the security rules below handle access) and pick any location close to you.
 
-### 4. Turn on Email/Password sign-in and create your accounts
+### 4. Turn on Google sign-in
 
-NamesApp shows a sign-in screen and only lets in the specific people you create accounts for — nobody else, even if they find the URL.
+NamesApp shows a "Continue with Google" screen — you and your wife sign in with your real Google accounts, no separate password to manage.
 
 1. Open **Build → Authentication → Sign-in method**.
-2. Enable the **Email/Password** provider.
-3. Go to the **Users** tab (still under Authentication) → **Add user**. Add one entry for yourself and one for your wife, each with an email and a password you choose. These don't need to be real inboxes — they're just credentials for this app.
+2. Enable the **Google** provider (it'll ask for a support email — any email you control is fine).
+3. Open **Build → Authentication → Settings → Authorized domains** and click **Add domain**. Add the domain you're hosting on (e.g. `clagos19.github.io`) — without this, Google sign-in fails with an "unauthorized domain" error once the page isn't running on `localhost` or `*.firebaseapp.com`.
+
+Note that enabling Google sign-in lets *any* Google account successfully sign in at the authentication level — the allowlist in the next step is what actually keeps other people's data private, not this step.
 
 ### 5. Set Firestore security rules
 
-Open **Build → Firestore Database → Rules** and use, with your two real emails from step 4 in place of the placeholders:
+Open **Build → Firestore Database → Rules** and use, with your and your wife's real Gmail addresses in place of the placeholders:
 
 ```
 rules_version = '2';
@@ -66,17 +68,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
       allow read, write: if request.auth != null
-        && request.auth.token.email in ["you@example.com", "wife@example.com"];
+        && request.auth.token.email in ["you@gmail.com", "wife@gmail.com"];
     }
   }
 }
 ```
 
-This is what actually keeps the data private: only someone signed in as one of those two email addresses can read or write anything, regardless of who has the URL or has seen the Firebase config in `index.html`. Click **Publish** after editing.
+This is what actually keeps the data private: only someone signed in with one of those two exact Google accounts can read or write anything, regardless of who has the URL or has seen the Firebase config in `index.html`. Someone signing in with a different Google account gets rejected by the app with a clear message, not access. Click **Publish** after editing.
 
 ### 6. Share it
 
-Host `index.html` (see "Running it yourself" above) and send the URL to your wife along with the login you created for her in step 4. Opening the URL shows a sign-in screen; after signing in, you both see and edit the same live list of contacts and categories. Signing out (from the pencil icon → Categories → Sign out) returns to that screen.
+Host `index.html` (see "Running it yourself" above) and send the URL to your wife. Opening the URL shows a "Continue with Google" screen; after signing in with an allowed Google account, you both see and edit the same live list of contacts and categories. Signing out (from the pencil icon → Categories → Sign out) returns to that screen.
 
 ## What it does
 

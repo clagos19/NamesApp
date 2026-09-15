@@ -704,22 +704,25 @@
     color: var(--danger);
     font-size: 0.82rem;
     text-align: center;
-    margin: -6px 0 14px;
+    margin: 0 0 16px;
   }
 
-  .auth-submit {
+  .google-signin-btn {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     margin-top: 6px;
-    border: none;
-    background: var(--ink);
-    color: var(--paper);
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    color: var(--ink);
     border-radius: 10px;
     padding: 13px;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     font-weight: 600;
   }
-  .auth-submit:active { transform: scale(0.98); }
-  .auth-submit:disabled { opacity: 0.6; }
+  .google-signin-btn:active { background: var(--paper-sunken); }
 
   @media (prefers-reduced-motion: reduce) {
     .sheet, .scrim, .fab { transition: none; }
@@ -821,20 +824,20 @@
 </form>
 
 <div class="auth-gate" id="authGate" hidden>
-  <form class="auth-card" id="authForm">
+  <div class="auth-card">
     <h1>NamesApp</h1>
-    <p class="auth-sub">Sign in to see your family's shared contacts.</p>
-    <div class="field">
-      <label for="authEmail">Email</label>
-      <input id="authEmail" type="email" autocomplete="username" required>
-    </div>
-    <div class="field">
-      <label for="authPassword">Password</label>
-      <input id="authPassword" type="password" autocomplete="current-password" required>
-    </div>
+    <p class="auth-sub">Sign in with your Google email to see your family's shared contacts.</p>
     <div class="auth-error" id="authError" hidden></div>
-    <button type="submit" class="auth-submit" id="authSubmit">Sign in</button>
-  </form>
+    <button type="button" class="google-signin-btn" id="googleSignInBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/>
+      </svg>
+      Continue with Google
+    </button>
+  </div>
 </div>
 
 <!--
@@ -956,11 +959,8 @@
     addCategoryBtn: document.getElementById("addCategoryBtn"),
     signOutBtn: document.getElementById("signOutBtn"),
     authGate: document.getElementById("authGate"),
-    authForm: document.getElementById("authForm"),
-    authEmail: document.getElementById("authEmail"),
-    authPassword: document.getElementById("authPassword"),
     authError: document.getElementById("authError"),
-    authSubmit: document.getElementById("authSubmit")
+    googleSignInBtn: document.getElementById("googleSignInBtn")
   };
 
   var formAreas = [];
@@ -1409,11 +1409,14 @@
 
   var dbUnsubscribes = [];
 
-  function setupDbBackend(db, syncLabel, seedFn) {
+  function setupDbBackend(db, syncLabel, seedFn, onError) {
     state.mode = "db";
-    dbCollection = db.collection("parents");
-    categoriesCollection = db.collection("categories");
+    var parentsCol = db.collection("parents");
+    var catsCol = db.collection("categories");
+    dbCollection = parentsCol;
+    categoriesCollection = catsCol;
     els.syncNote.textContent = syncLabel;
+    onError = onError || fallbackToLocal;
 
     var metaRef = db.doc("meta/init");
     metaRef.get().then(function (snap) {
@@ -1423,12 +1426,12 @@
       }
     }).catch(function (err) { console.error("seed check failed", err); });
 
-    dbUnsubscribes.push(dbCollection.onSnapshot(function (snap) {
+    dbUnsubscribes.push(parentsCol.onSnapshot(function (snap) {
       state.records = snap.docs.map(function (d) {
         var data = Object.assign({ id: d.id }, d.data());
         if (!Array.isArray(data.parents)) {
           var migrated = normalizeRecord(data);
-          dbCollection.doc(d.id).set(migrated).catch(function (err) { console.error("migrate failed", err); });
+          parentsCol.doc(d.id).set(migrated).catch(function (err) { console.error("migrate failed", err); });
           data = migrated;
         }
         return data;
@@ -1436,10 +1439,10 @@
       render();
     }, function (err) {
       console.error("db subscribe failed", err);
-      fallbackToLocal();
+      onError(err);
     }));
 
-    dbUnsubscribes.push(categoriesCollection.onSnapshot(function (snap) {
+    dbUnsubscribes.push(catsCol.onSnapshot(function (snap) {
       state.categories = snap.docs.map(function (d) {
         return Object.assign({ id: d.id }, d.data());
       }).sort(function (a, b) { return a.name.localeCompare(b.name); });
@@ -1475,15 +1478,22 @@
     });
   }
 
+  var pendingAuthError = null;
+
   function showAuthGate() {
     els.authGate.hidden = false;
     els.signOutBtn.hidden = true;
+    if (pendingAuthError) {
+      setAuthError(pendingAuthError);
+      pendingAuthError = null;
+    } else {
+      els.authError.hidden = true;
+    }
   }
 
   function hideAuthGate() {
     els.authGate.hidden = true;
     els.authError.hidden = true;
-    els.authForm.reset();
   }
 
   function setAuthError(message) {
@@ -1491,18 +1501,19 @@
     els.authError.hidden = false;
   }
 
-  els.authForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    els.authSubmit.disabled = true;
+  function denyAccess(message) {
+    pendingAuthError = message;
+    firebase.auth().signOut();
+  }
+
+  els.googleSignInBtn.addEventListener("click", function () {
     els.authError.hidden = true;
-    firebase.auth().signInWithEmailAndPassword(els.authEmail.value.trim(), els.authPassword.value)
-      .catch(function (err) {
-        console.error("sign-in failed", err);
-        setAuthError(err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found"
-          ? "Wrong email or password."
-          : "Couldn't sign in — try again.");
-      })
-      .finally(function () { els.authSubmit.disabled = false; });
+    firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(function (err) {
+      console.error("google sign-in failed", err);
+      setAuthError(err.code === "auth/unauthorized-domain"
+        ? "This site isn't authorized for Google sign-in yet — add it under Firebase Authentication settings."
+        : "Couldn't sign in — try again.");
+    });
   });
 
   els.signOutBtn.addEventListener("click", function () {
@@ -1513,6 +1524,10 @@
     if (typeof firebase !== "undefined" && firebaseConfigured()) {
       try {
         firebase.initializeApp(FIREBASE_CONFIG);
+        firebase.auth().getRedirectResult().catch(function (err) {
+          console.error("google redirect sign-in failed", err);
+          setAuthError("Couldn't sign in — try again.");
+        });
         var firebaseBackendActive = false;
         firebase.auth().onAuthStateChanged(function (user) {
           if (user) {
@@ -1523,6 +1538,12 @@
               setupDbBackend(firebase.firestore(), "Synced via Firebase", function () {
                 IMPORT_CATEGORIES.forEach(function (cat) { categoriesCollection.add(cat); });
                 IMPORT_CONTACTS.forEach(function (contact) { dbCollection.add(contact); });
+              }, function (err) {
+                if (err && err.code === "permission-denied") {
+                  denyAccess("That Google account isn't on the family list. Try a different one.");
+                } else {
+                  fallbackToLocal();
+                }
               });
             }
           } else {
