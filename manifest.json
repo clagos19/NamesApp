@@ -1,0 +1,15 @@
+{
+  "name": "Parent Roster",
+  "short_name": "Roster",
+  "description": "A mobile directory for tracking parent contacts across school, sports, volunteering, and any other area of your kids' lives.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef1ee",
+  "theme_color": "#eef1ee",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}

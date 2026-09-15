@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parent Roster</title>
+<meta name="description" content="A mobile directory for tracking parent contacts across school, sports, volunteering, and any other area of your kids' lives.">
+<meta name="theme-color" content="#eef1ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12100d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roster">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root {
+    --paper: #eef1ee;
+    --paper-raised: #ffffff;
+    --paper-sunken: #e2e6e1;
+    --ink: #1c2521;
+    --ink-soft: #5b665f;
+    --ink-faint: #8a938c;
+    --line: #d8ddd7;
+    --line-strong: #c3cac2;
+    --danger: #a8412f;
+    --focus: #1c2521;
+
+    --area-school: #9c7013;
+    --area-sports: #1f7a6c;
+    --area-volunteering: #b34d3c;
+    --area-extra-1: #6b5b95;
+    --area-extra-2: #3d6ca8;
+    --area-extra-3: #74842f;
+    --area-extra-4: #8a4a72;
+
+    --sheet-shadow: 0 -8px 30px rgba(20, 26, 22, 0.16);
+    --card-shadow: 0 1px 2px rgba(20, 26, 22, 0.06);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #12100d;
+      --paper-raised: #1c1a16;
+      --paper-sunken: #221f1a;
+      --ink: #f1efe9;
+      --ink-soft: #b6b0a4;
+      --ink-faint: #7d766a;
+      --line: #34312a;
+      --line-strong: #433f36;
+      --danger: #e0806e;
+      --focus: #f1efe9;
+
+      --area-school: #e0aa38;
+      --area-sports: #59b7a4;
+      --area-volunteering: #e08a72;
+      --area-extra-1: #ab98d9;
+      --area-extra-2: #85b0e3;
+      --area-extra-3: #b4c46f;
+      --area-extra-4: #cf8fb2;
+
+      --sheet-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+      --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #12100d;
+    --paper-raised: #1c1a16;
+    --paper-sunken: #221f1a;
+    --ink: #f1efe9;
+    --ink-soft: #b6b0a4;
+    --ink-faint: #7d766a;
+    --line: #34312a;
+    --line-strong: #433f36;
+    --danger: #e0806e;
+    --focus: #f1efe9;
+
+    --area-school: #e0aa38;
+    --area-sports: #59b7a4;
+    --area-volunteering: #e08a72;
+    --area-extra-1: #ab98d9;
+    --area-extra-2: #85b0e3;
+    --area-extra-3: #b4c46f;
+    --area-extra-4: #cf8fb2;
+
+    --sheet-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Work Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 520px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; text-wrap: balance; margin: 0; }
+
+  ::selection { background: var(--ink); color: var(--paper); }
+
+  button { font-family: inherit; }
+  input, textarea { font-family: inherit; color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--paper);
+    padding: 18px 20px 0;
+    flex: none;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .title-row h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .count-badge {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .search-wrap {
+    margin-top: 14px;
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-faint);
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 11px;
+    padding: 10px 12px 10px 36px;
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+
+  #search::placeholder { color: var(--ink-faint); }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin: 14px 0 0;
+    padding-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 6px 13px 6px 10px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .tab .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tab-c, var(--ink-faint));
+    flex: none;
+  }
+
+  .tab.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .tab.active .dot { background: var(--paper); }
+
+  /* ---------- List ---------- */
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 20px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .group-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 20px 2px 8px;
+  }
+  .group-label:first-child { margin-top: 8px; }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card {
+    --accent: var(--ink-faint);
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .card-main { flex: 1; min-width: 0; }
+
+  .card-names {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  .parent-name {
+    font-weight: 600;
+    font-size: 0.98rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .child-name {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .child-name::before { content: "· parent of "; }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+  }
+
+  .area-chip {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .card-notes {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    flex: none;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--paper-sunken);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex: none;
+  }
+  .icon-btn:active { background: var(--line); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-state h2 { font-size: 1.15rem; margin-bottom: 6px; }
+  .empty-state p { font-size: 0.88rem; max-width: 34ch; margin: 0 auto; }
+
+  .example-flag {
+    display: inline-block;
+    margin: 22px 0 10px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border: 1px dashed var(--line-strong);
+    border-radius: 999px;
+    padding: 4px 10px;
+  }
+
+  /* ---------- FAB ---------- */
+
+  .fab {
+    position: absolute;
+    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(20, 26, 22, 0.28);
+    z-index: 25;
+  }
+  .fab:active { transform: scale(0.94); }
+
+  /* ---------- Sheet (add/edit) ---------- */
+
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 18, 15, 0.4);
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 100%);
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    background: var(--paper-raised);
+    border-radius: 20px 20px 0 0;
+    box-shadow: var(--sheet-shadow);
+    z-index: 31;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sheet.open { transform: translate(-50%, 0); }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line-strong);
+    margin: 10px auto 4px;
+    flex: none;
+  }
+
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 18px 12px;
+    flex: none;
+  }
+  .sheet-head h2 { font-size: 1.2rem; font-weight: 600; }
+
+  .text-btn {
+    border: none;
+    background: none;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    padding: 6px 4px;
+  }
+  .text-btn.primary { color: var(--ink); }
+  .text-btn.danger { color: var(--danger); }
+
+  .sheet-body {
+    overflow-y: auto;
+    padding: 4px 18px 24px;
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--paper-sunken);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 0.98rem;
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    background: var(--paper-sunken);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .chip-select .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--chip-c, var(--ink-faint));
+  }
+  .chip-select.selected {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .chip-select.selected .dot { background: var(--paper); }
+
+  .new-area-input {
+    display: none;
+    margin-top: 10px;
+  }
+  .new-area-input.show { display: block; }
+
+  .delete-row {
+    margin-top: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .delete-row button {
+    width: 100%;
+    border: none;
+    background: none;
+    color: var(--danger);
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 10px;
+  }
+
+  .sync-note {
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    padding: 8px 0 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheet, .scrim, .fab { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="title-row">
+      <h1>Parent Roster</h1>
+      <span class="count-badge" id="countBadge">0 saved</span>
+    </div>
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4"/><path d="M11 11L14.2 14.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <input id="search" type="text" placeholder="Search parent, child, or area" autocomplete="off">
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </header>
+
+  <main id="main"></main>
+
+  <button class="fab" id="addBtn" aria-label="Add contact">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<form class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <button type="button" class="text-btn" id="cancelBtn">Cancel</button>
+    <h2 id="sheetTitle">Add contact</h2>
+    <button type="submit" class="text-btn primary">Save</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label for="parentName">Parent name</label>
+      <input id="parentName" required autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="childName">Child's name</label>
+      <input id="childName" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Area</label>
+      <div class="chip-row" id="areaChips"></div>
+      <div class="new-area-input" id="newAreaWrap">
+        <input id="newAreaInput" placeholder="Name this area, e.g. Chess Club">
+      </div>
+    </div>
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input id="phone" type="tel" placeholder="(555) 123-4567" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="name@email.com" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Carpool days, allergy info, anything worth remembering"></textarea>
+    </div>
+    <div class="delete-row" id="deleteRow" style="display:none">
+      <button type="button" id="deleteBtn">Delete contact</button>
+    </div>
+  </div>
+  <div class="sync-note" id="syncNote"></div>
+</form>
+
+<script>
+(function () {
+  "use strict";
+
+  var DEFAULT_AREAS = ["School", "Sports", "Volunteering"];
+  var AREA_VAR = { School: "--area-school", Sports: "--area-sports", Volunteering: "--area-volunteering" };
+  var EXTRA_VARS = ["--area-extra-1", "--area-extra-2", "--area-extra-3", "--area-extra-4"];
+
+  function areaVar(area) {
+    if (AREA_VAR[area]) return AREA_VAR[area];
+    var h = 0;
+    for (var i = 0; i < area.length; i++) h = (h * 31 + area.charCodeAt(i)) >>> 0;
+    return EXTRA_VARS[h % EXTRA_VARS.length];
+  }
+
+  var EXAMPLES = [
+    { id: "ex1", parentName: "Dana Ruiz", childName: "Mateo", area: "School", phone: "", email: "", notes: "Room 12 class parent, example only", example: true },
+    { id: "ex2", parentName: "Priya Nandan", childName: "Ava", area: "Sports", phone: "", email: "", notes: "U8 soccer, Tuesday practices, example only", example: true },
+    { id: "ex3", parentName: "Marcus Webb", childName: "Ezra", area: "Volunteering", phone: "", email: "", notes: "Food pantry Saturdays, example only", example: true }
+  ];
+
+  var state = {
+    mode: null,
+    records: [],
+    activeTab: "All",
+    query: "",
+    editingId: null
+  };
+
+  var els = {
+    tabs: document.getElementById("tabs"),
+    main: document.getElementById("main"),
+    countBadge: document.getElementById("countBadge"),
+    search: document.getElementById("search"),
+    addBtn: document.getElementById("addBtn"),
+    scrim: document.getElementById("scrim"),
+    sheet: document.getElementById("sheet"),
+    sheetTitle: document.getElementById("sheetTitle"),
+    cancelBtn: document.getElementById("cancelBtn"),
+    deleteRow: document.getElementById("deleteRow"),
+    deleteBtn: document.getElementById("deleteBtn"),
+    areaChips: document.getElementById("areaChips"),
+    newAreaWrap: document.getElementById("newAreaWrap"),
+    newAreaInput: document.getElementById("newAreaInput"),
+    parentName: document.getElementById("parentName"),
+    childName: document.getElementById("childName"),
+    phone: document.getElementById("phone"),
+    email: document.getElementById("email"),
+    notes: document.getElementById("notes"),
+    syncNote: document.getElementById("syncNote")
+  };
+
+  var formArea = "School";
+  var dbCollection = null;
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function knownAreas() {
+    var seen = {};
+    var list = [];
+    DEFAULT_AREAS.forEach(function (a) { if (!seen[a]) { seen[a] = true; list.push(a); } });
+    state.records.forEach(function (r) {
+      if (r.area && !seen[r.area]) { seen[r.area] = true; list.push(r.area); }
+    });
+    return list;
+  }
+
+  function persistLocal() {
+    try { localStorage.setItem("parentRosterData", JSON.stringify(state.records)); } catch (e) {}
+  }
+
+  function render() {
+    renderCount();
+    renderTabs();
+    renderList();
+  }
+
+  function renderCount() {
+    var n = state.records.length;
+    els.countBadge.textContent = n === 1 ? "1 saved" : n + " saved";
+  }
+
+  function renderTabs() {
+    var areas = knownAreas();
+    var tabs = ["All"].concat(areas);
+    els.tabs.innerHTML = tabs.map(function (a) {
+      var active = a === state.activeTab;
+      var dotStyle = a === "All" ? "" : ' style="--tab-c: var(' + areaVar(a) + ')"';
+      return '<button type="button" class="tab' + (active ? " active" : "") + '" data-area="' + escapeHtml(a) + '"' + dotStyle + '>' +
+        (a === "All" ? "" : '<span class="dot"></span>') +
+        escapeHtml(a) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(els.tabs.querySelectorAll(".tab"), function (btn) {
+      btn.addEventListener("click", function () {
+        state.activeTab = btn.getAttribute("data-area");
+        render();
+      });
+    });
+  }
+
+  function matchesFilters(r) {
+    if (state.activeTab !== "All" && r.area !== state.activeTab) return false;
+    if (!state.query) return true;
+    var q = state.query.toLowerCase();
+    return (r.parentName || "").toLowerCase().indexOf(q) !== -1 ||
+      (r.childName || "").toLowerCase().indexOf(q) !== -1 ||
+      (r.area || "").toLowerCase().indexOf(q) !== -1 ||
+      (r.notes || "").toLowerCase().indexOf(q) !== -1;
+  }
+
+  function cardHtml(r) {
+    var v = areaVar(r.area || "");
+    var actions = "";
+    if (r.phone) {
+      actions += '<a class="icon-btn" href="tel:' + escapeHtml(r.phone) + '" aria-label="Call ' + escapeHtml(r.parentName) + '" onclick="event.stopPropagation()">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.2c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z" fill="currentColor"/></svg></a>';
+    }
+    if (r.email) {
+      actions += '<a class="icon-btn" href="mailto:' + escapeHtml(r.email) + '" aria-label="Email ' + escapeHtml(r.parentName) + '" onclick="event.stopPropagation()">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5v-11z" stroke="currentColor" stroke-width="1.5"/><path d="M4 6.5l8 6 8-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>';
+    }
+    return '<div class="card' + (r.example ? " is-example" : "") + '" style="--accent: var(' + v + ')" data-id="' + escapeHtml(r.id) + '">' +
+      '<div class="card-main">' +
+        '<div class="card-names">' +
+          '<span class="parent-name">' + escapeHtml(r.parentName) + "</span>" +
+          (r.childName ? '<span class="child-name">' + escapeHtml(r.childName) + "</span>" : "") +
+        "</div>" +
+        '<div class="card-meta"><span class="area-chip">' + escapeHtml(r.area || "Other") + "</span></div>" +
+        (r.notes ? '<div class="card-notes">' + escapeHtml(r.notes) + "</div>" : "") +
+      "</div>" +
+      '<div class="card-actions">' + actions + "</div>" +
+    "</div>";
+  }
+
+  function renderList() {
+    var usingExamples = state.records.length === 0;
+    var source = usingExamples ? EXAMPLES : state.records;
+    var filtered = source.filter(matchesFilters).slice().sort(function (a, b) {
+      return (a.parentName || "").localeCompare(b.parentName || "");
+    });
+
+    if (state.records.length === 0) {
+      els.main.innerHTML =
+        '<div class="empty-state"><h2>No contacts yet</h2><p>Save a parent from school, sports, or anywhere else your family shows up. Here is what it will look like:</p></div>' +
+        '<div class="example-flag">Examples below</div>' +
+        '<div class="card-list">' + filtered.map(cardHtml).join("") + "</div>";
+      return;
+    }
+
+    if (filtered.length === 0) {
+      els.main.innerHTML = '<div class="empty-state"><h2>No matches</h2><p>Try a different search or tab.</p></div>';
+      return;
+    }
+
+    els.main.innerHTML = '<div class="card-list">' + filtered.map(cardHtml).join("") + "</div>";
+    Array.prototype.forEach.call(els.main.querySelectorAll(".card:not(.is-example)"), function (card) {
+      card.addEventListener("click", function () {
+        openEdit(card.getAttribute("data-id"));
+      });
+    });
+  }
+
+  // ---------- Sheet ----------
+
+  function renderAreaChips() {
+    var areas = knownAreas();
+    els.areaChips.innerHTML = areas.map(function (a) {
+      var sel = a === formArea;
+      return '<button type="button" class="chip-select' + (sel ? " selected" : "") + '" data-area="' + escapeHtml(a) + '" style="--chip-c: var(' + areaVar(a) + ')"><span class="dot"></span>' + escapeHtml(a) + "</button>";
+    }).join("") + '<button type="button" class="chip-select" id="otherAreaChip"' +
+      (!areas.includes(formArea) ? ' style="background:var(--ink);border-color:var(--ink);color:var(--paper)"' : "") +
+      ">Other…</button>";
+
+    Array.prototype.forEach.call(els.areaChips.querySelectorAll(".chip-select[data-area]"), function (btn) {
+      btn.addEventListener("click", function () {
+        formArea = btn.getAttribute("data-area");
+        els.newAreaWrap.classList.remove("show");
+        renderAreaChips();
+      });
+    });
+    document.getElementById("otherAreaChip").addEventListener("click", function () {
+      els.newAreaWrap.classList.add("show");
+      els.newAreaInput.focus();
+    });
+  }
+
+  function openSheet(title, record) {
+    state.editingId = record ? record.id : null;
+    els.sheetTitle.textContent = title;
+    els.parentName.value = record ? record.parentName || "" : "";
+    els.childName.value = record ? record.childName || "" : "";
+    els.phone.value = record ? record.phone || "" : "";
+    els.email.value = record ? record.email || "" : "";
+    els.notes.value = record ? record.notes || "" : "";
+    formArea = record ? (record.area || "School") : (state.activeTab !== "All" ? state.activeTab : "School");
+    els.newAreaInput.value = "";
+    els.newAreaWrap.classList.remove("show");
+    els.deleteRow.style.display = record ? "block" : "none";
+    renderAreaChips();
+    els.scrim.classList.add("open");
+    els.sheet.classList.add("open");
+    setTimeout(function () { els.parentName.focus(); }, 250);
+  }
+
+  function closeSheet() {
+    els.scrim.classList.remove("open");
+    els.sheet.classList.remove("open");
+    state.editingId = null;
+  }
+
+  function openEdit(id) {
+    var r = state.records.filter(function (x) { return x.id === id; })[0];
+    if (r) openSheet("Edit contact", r);
+  }
+
+  els.addBtn.addEventListener("click", function () { openSheet("Add contact", null); });
+  els.cancelBtn.addEventListener("click", closeSheet);
+  els.scrim.addEventListener("click", closeSheet);
+
+  els.sheet.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var area = els.newAreaWrap.classList.contains("show") && els.newAreaInput.value.trim()
+      ? els.newAreaInput.value.trim()
+      : formArea;
+    var data = {
+      parentName: els.parentName.value.trim(),
+      childName: els.childName.value.trim(),
+      area: area || "Other",
+      phone: els.phone.value.trim(),
+      email: els.email.value.trim(),
+      notes: els.notes.value.trim()
+    };
+    if (!data.parentName) { els.parentName.focus(); return; }
+    if (state.editingId) {
+      updateRecord(state.editingId, data);
+    } else {
+      addRecord(data);
+    }
+    closeSheet();
+  });
+
+  els.deleteBtn.addEventListener("click", function () {
+    if (state.editingId) deleteRecord(state.editingId);
+    closeSheet();
+  });
+
+  els.search.addEventListener("input", function () {
+    state.query = els.search.value;
+    renderList();
+  });
+
+  // ---------- Storage ----------
+
+  function addRecord(data) {
+    if (state.mode === "db" && dbCollection) {
+      data.createdAt = Date.now();
+      dbCollection.add(data).catch(function (err) { console.error("db add failed", err); });
+    } else {
+      data.id = "local-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+      data.createdAt = Date.now();
+      state.records.push(data);
+      persistLocal();
+      render();
+    }
+  }
+
+  function updateRecord(id, data) {
+    if (state.mode === "db" && dbCollection) {
+      dbCollection.doc(id).update(data).catch(function (err) { console.error("db update failed", err); });
+    } else {
+      var idx = state.records.findIndex(function (r) { return r.id === id; });
+      if (idx !== -1) state.records[idx] = Object.assign({}, state.records[idx], data);
+      persistLocal();
+      render();
+    }
+  }
+
+  function deleteRecord(id) {
+    if (state.mode === "db" && dbCollection) {
+      dbCollection.doc(id).delete().catch(function (err) { console.error("db delete failed", err); });
+    } else {
+      state.records = state.records.filter(function (r) { return r.id !== id; });
+      persistLocal();
+      render();
+    }
+  }
+
+  function fallbackToLocal() {
+    state.mode = "local";
+    try {
+      state.records = JSON.parse(localStorage.getItem("parentRosterData") || "[]");
+    } catch (e) {
+      state.records = [];
+    }
+    els.syncNote.textContent = "Saved on this device only";
+    render();
+  }
+
+  function initStorage() {
+    if (typeof window.claude === "undefined" || typeof window.claude.use !== "function") {
+      fallbackToLocal();
+      return;
+    }
+    window.claude.use("db").then(function (db) {
+      if (!db) { fallbackToLocal(); return; }
+      state.mode = "db";
+      dbCollection = db.collection("parents");
+      els.syncNote.textContent = "Synced";
+      dbCollection.onSnapshot(function (snap) {
+        state.records = snap.docs.map(function (d) {
+          return Object.assign({ id: d.id }, d.data());
+        });
+        render();
+      }, function (err) {
+        console.error("db subscribe failed", err);
+        fallbackToLocal();
+      });
+    }).catch(function () {
+      fallbackToLocal();
+    });
+  }
+
+  render();
+  initStorage();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("service-worker.js").catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
