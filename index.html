@@ -1408,8 +1408,15 @@
   });
 
   els.deleteBtn.addEventListener("click", function () {
-    if (state.editingId) deleteRecord(state.editingId);
-    closeSheet();
+    if (!state.editingId) return;
+    var id = state.editingId;
+    var record = state.records.filter(function (r) { return r.id === id; })[0];
+    var name = record && record.parents && record.parents.length ? record.parents.join(" & ") : "this contact";
+    showConfirm('Delete "' + name + '"? This can’t be undone.').then(function (confirmed) {
+      if (!confirmed) return;
+      deleteRecord(id);
+      closeSheet();
+    });
   });
 
   els.search.addEventListener("input", function () {
