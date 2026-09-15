@@ -338,6 +338,19 @@
     flex: none;
   }
 
+  .family-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--paper-sunken);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 2px 9px 2px 7px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .family-chip svg { flex: none; }
+
   .card-notes {
     font-size: 0.78rem;
     color: var(--ink-faint);
@@ -690,6 +703,10 @@
       <button type="button" class="add-row-btn" id="addChildBtn">+ Add another child</button>
     </div>
     <div class="field">
+      <label>Family member</label>
+      <div class="chip-row" id="familyChips"></div>
+    </div>
+    <div class="field">
       <label>Categories</label>
       <div class="chip-row" id="areaChips"></div>
       <div class="new-area-input" id="newAreaWrap">
@@ -737,6 +754,8 @@
   "use strict";
 
   var DEFAULT_CATEGORY_NAMES = ["School", "Sports", "Volunteering"];
+  var FAMILY_MEMBERS = ["Sara", "Ben", "Connor", "Cris"];
+  var PERSON_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>';
   var AREA_VAR = { School: "--area-school", Sports: "--area-sports", Volunteering: "--area-volunteering" };
   var EXTRA_VARS = ["--area-extra-1", "--area-extra-2", "--area-extra-3", "--area-extra-4"];
   var X_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -749,9 +768,9 @@
   }
 
   var EXAMPLES = [
-    { id: "ex1", parents: ["Dana Ruiz"], children: ["Mateo"], areas: ["School"], phone: "", email: "", notes: "Room 12 class parent, example only", example: true },
-    { id: "ex2", parents: ["Priya Nandan", "Alex Nandan"], children: ["Ava", "Theo"], areas: ["Sports", "Volunteering"], phone: "", email: "", notes: "U8 soccer + snack duty, example only", example: true },
-    { id: "ex3", parents: ["Marcus Webb"], children: ["Ezra"], areas: ["Volunteering"], phone: "", email: "", notes: "Food pantry Saturdays, example only", example: true }
+    { id: "ex1", parents: ["Dana Ruiz"], children: ["Mateo"], areas: ["School"], family: ["Ben"], phone: "", email: "", notes: "Room 12 class parent, example only", example: true },
+    { id: "ex2", parents: ["Priya Nandan", "Alex Nandan"], children: ["Ava", "Theo"], areas: ["Sports", "Volunteering"], family: ["Connor", "Cris"], phone: "", email: "", notes: "U8 soccer + snack duty, example only", example: true },
+    { id: "ex3", parents: ["Marcus Webb"], children: ["Ezra"], areas: ["Volunteering"], family: ["Sara"], phone: "", email: "", notes: "Food pantry Saturdays, example only", example: true }
   ];
 
   var state = {
@@ -778,6 +797,7 @@
     areaChips: document.getElementById("areaChips"),
     newAreaWrap: document.getElementById("newAreaWrap"),
     newAreaInput: document.getElementById("newAreaInput"),
+    familyChips: document.getElementById("familyChips"),
     parentsList: document.getElementById("parentsList"),
     addParentBtn: document.getElementById("addParentBtn"),
     childrenList: document.getElementById("childrenList"),
@@ -795,6 +815,7 @@
   };
 
   var formAreas = [];
+  var formFamily = [];
   var dbCollection = null;
   var categoriesCollection = null;
 
@@ -891,7 +912,7 @@
     if (state.activeTab !== "All" && (!r.areas || r.areas.indexOf(state.activeTab) === -1)) return false;
     if (!state.query) return true;
     var q = state.query.toLowerCase();
-    var haystack = [].concat(r.parents || [], r.children || [], r.areas || [], [r.notes || ""]).join(" • ").toLowerCase();
+    var haystack = [].concat(r.parents || [], r.children || [], r.areas || [], r.family || [], [r.notes || ""]).join(" • ").toLowerCase();
     return haystack.indexOf(q) !== -1;
   }
 
@@ -914,13 +935,17 @@
     var areaChips = areas.map(function (a) {
       return '<span class="area-chip" style="--c: var(' + areaVar(a) + ')"><span class="dot"></span>' + escapeHtml(a) + "</span>";
     }).join("");
+    var familyChips = (r.family || []).map(function (name) {
+      return '<span class="family-chip">' + PERSON_ICON + escapeHtml(name) + "</span>";
+    }).join("");
+    var metaRow = areaChips || familyChips ? '<div class="card-meta">' + areaChips + familyChips + "</div>" : "";
     return '<div class="card' + (r.example ? " is-example" : "") + '" style="' + accentStyle + '" data-id="' + escapeHtml(r.id) + '">' +
       '<div class="card-main">' +
         '<div class="card-names">' +
           '<span class="parent-name">' + escapeHtml(parentsText) + "</span>" +
           (childrenText ? '<span class="child-name">' + childPrefix + escapeHtml(childrenText) + "</span>" : "") +
         "</div>" +
-        (areaChips ? '<div class="card-meta">' + areaChips + "</div>" : "") +
+        metaRow +
         (r.notes ? '<div class="card-notes">' + escapeHtml(r.notes) + "</div>" : "") +
       "</div>" +
       '<div class="card-actions">' + actions + "</div>" +
@@ -982,6 +1007,21 @@
     });
   }
 
+  function renderFamilyChips() {
+    els.familyChips.innerHTML = FAMILY_MEMBERS.map(function (name) {
+      var sel = formFamily.indexOf(name) !== -1;
+      return '<button type="button" class="chip-select' + (sel ? " selected" : "") + '" data-name="' + escapeHtml(name) + '">' + escapeHtml(name) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(els.familyChips.querySelectorAll(".chip-select"), function (btn) {
+      btn.addEventListener("click", function () {
+        var name = btn.getAttribute("data-name");
+        var idx = formFamily.indexOf(name);
+        if (idx === -1) formFamily.push(name); else formFamily.splice(idx, 1);
+        renderFamilyChips();
+      });
+    });
+  }
+
   function commitNewArea() {
     var name = els.newAreaInput.value.trim();
     els.newAreaWrap.classList.remove("show");
@@ -1006,10 +1046,12 @@
     els.email.value = record ? record.email || "" : "";
     els.notes.value = record ? record.notes || "" : "";
     formAreas = record ? (record.areas ? record.areas.slice() : []) : (state.activeTab !== "All" ? [state.activeTab] : []);
+    formFamily = record && record.family ? record.family.slice() : [];
     els.newAreaInput.value = "";
     els.newAreaWrap.classList.remove("show");
     els.deleteRow.style.display = record ? "block" : "none";
     renderAreaChips();
+    renderFamilyChips();
     els.scrim.classList.add("open");
     els.sheet.classList.add("open");
     setTimeout(function () {
@@ -1045,6 +1087,7 @@
       parents: parents,
       children: childrenList.read(),
       areas: formAreas.slice(),
+      family: formFamily.slice(),
       phone: els.phone.value.trim(),
       email: els.email.value.trim(),
       notes: els.notes.value.trim()
