@@ -809,6 +809,53 @@
   }
   .google-signin-btn:active { background: var(--paper-sunken); }
 
+  /* ---------- Confirm dialog ---------- */
+
+  .confirm-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(15, 18, 15, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .confirm-card {
+    width: 100%;
+    max-width: 300px;
+    background: var(--paper-raised);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--sheet-shadow);
+  }
+
+  .confirm-message {
+    font-size: 0.92rem;
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.45;
+    margin: 2px 0 18px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .confirm-btn {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+  .confirm-btn:active { transform: scale(0.97); }
+  .confirm-cancel { background: var(--paper-sunken); color: var(--ink); }
+  .confirm-danger { background: var(--danger); color: #fff; }
+
   @media (prefers-reduced-motion: reduce) {
     .sheet, .scrim, .fab { transition: none; }
   }
@@ -927,6 +974,16 @@
       </svg>
       Continue with Google
     </button>
+  </div>
+</div>
+
+<div class="confirm-gate" id="confirmGate" hidden>
+  <div class="confirm-card">
+    <p class="confirm-message" id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button type="button" class="confirm-btn confirm-cancel" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="confirm-btn confirm-danger" id="confirmDangerBtn">Delete</button>
+    </div>
   </div>
 </div>
 
@@ -1056,7 +1113,11 @@
     loadingScreen: document.getElementById("loadingScreen"),
     authGate: document.getElementById("authGate"),
     authError: document.getElementById("authError"),
-    googleSignInBtn: document.getElementById("googleSignInBtn")
+    googleSignInBtn: document.getElementById("googleSignInBtn"),
+    confirmGate: document.getElementById("confirmGate"),
+    confirmMessage: document.getElementById("confirmMessage"),
+    confirmCancelBtn: document.getElementById("confirmCancelBtn"),
+    confirmDangerBtn: document.getElementById("confirmDangerBtn")
   };
 
   var formAreas = [];
@@ -1464,28 +1525,52 @@
     }
   }
 
+  var confirmResolve = null;
+
+  function showConfirm(message) {
+    return new Promise(function (resolve) {
+      confirmResolve = resolve;
+      els.confirmMessage.textContent = message;
+      els.confirmGate.hidden = false;
+    });
+  }
+
+  function settleConfirm(result) {
+    els.confirmGate.hidden = true;
+    if (confirmResolve) {
+      var resolve = confirmResolve;
+      confirmResolve = null;
+      resolve(result);
+    }
+  }
+
+  els.confirmCancelBtn.addEventListener("click", function () { settleConfirm(false); });
+  els.confirmDangerBtn.addEventListener("click", function () { settleConfirm(true); });
+
   function deleteCategory(cat) {
     var used = state.records.filter(function (r) { return r.areas && r.areas.indexOf(cat.name) !== -1; }).length;
     var msg = used > 0
       ? 'Delete "' + cat.name + '"? It will be removed from ' + used + " contact" + (used === 1 ? "" : "s") + "."
       : 'Delete "' + cat.name + '"?';
-    if (!window.confirm(msg)) return;
-    state.records.forEach(function (r) {
-      if (r.areas && r.areas.indexOf(cat.name) !== -1) {
-        updateRecord(r.id, { areas: r.areas.filter(function (a) { return a !== cat.name; }) });
+    showConfirm(msg).then(function (confirmed) {
+      if (!confirmed) return;
+      state.records.forEach(function (r) {
+        if (r.areas && r.areas.indexOf(cat.name) !== -1) {
+          updateRecord(r.id, { areas: r.areas.filter(function (a) { return a !== cat.name; }) });
+        }
+      });
+      if (state.mode === "db" && categoriesCollection) {
+        categoriesCollection.doc(cat.id).delete().catch(function (err) { console.error("delete category failed", err); });
+      } else {
+        state.categories = state.categories.filter(function (c) { return c.id !== cat.id; });
+        persistCategoriesLocal();
+        render();
+        renderCategoryList();
       }
+      var idx = formAreas.indexOf(cat.name);
+      if (idx !== -1) { formAreas.splice(idx, 1); renderAreaChips(); }
+      if (state.activeTab === cat.name) { state.activeTab = "All"; }
     });
-    if (state.mode === "db" && categoriesCollection) {
-      categoriesCollection.doc(cat.id).delete().catch(function (err) { console.error("delete category failed", err); });
-    } else {
-      state.categories = state.categories.filter(function (c) { return c.id !== cat.id; });
-      persistCategoriesLocal();
-      render();
-      renderCategoryList();
-    }
-    var idx = formAreas.indexOf(cat.name);
-    if (idx !== -1) { formAreas.splice(idx, 1); renderAreaChips(); }
-    if (state.activeTab === cat.name) { state.activeTab = "All"; }
   }
 
   // ---------- Storage ----------
