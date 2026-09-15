@@ -33,16 +33,18 @@
     --danger: #a8412f;
     --focus: #1c2521;
 
-    --area-school: #9c7013;
-    --area-sports: #1f7a6c;
-    --area-volunteering: #b34d3c;
-    --area-extra-1: #6b5b95;
-    --area-extra-2: #3d6ca8;
-    --area-extra-3: #74842f;
-    --area-extra-4: #8a4a72;
-    --area-extra-5: #a8456f;
-    --area-extra-6: #3f7d4a;
-    --area-extra-7: #4a5a72;
+    --palette-1: #992154;
+    --palette-2: #ca5553;
+    --palette-3: #8e3d00;
+    --palette-4: #a4780e;
+    --palette-5: #556000;
+    --palette-6: #55941c;
+    --palette-7: #00b0ad;
+    --palette-8: #005f91;
+    --palette-9: #5591dd;
+    --palette-10: #4c4c9e;
+    --palette-11: #a75fb7;
+    --palette-12: #893365;
 
     --sheet-shadow: 0 -8px 30px rgba(20, 26, 22, 0.16);
     --card-shadow: 0 1px 2px rgba(20, 26, 22, 0.06);
@@ -63,16 +65,18 @@
       --danger: #e0806e;
       --focus: #f1efe9;
 
-      --area-school: #e0aa38;
-      --area-sports: #59b7a4;
-      --area-volunteering: #e08a72;
-      --area-extra-1: #ab98d9;
-      --area-extra-2: #85b0e3;
-      --area-extra-3: #b4c46f;
-      --area-extra-4: #cf8fb2;
-      --area-extra-5: #d98bb0;
-      --area-extra-6: #7bc28c;
-      --area-extra-7: #93a8c2;
+      --palette-1: #b73f6e;
+      --palette-2: #d15b58;
+      --palette-3: #b0540e;
+      --palette-4: #b07c00;
+      --palette-5: #6e7a00;
+      --palette-6: #6f9d17;
+      --palette-7: #008f75;
+      --palette-8: #007c9e;
+      --palette-9: #4c88d3;
+      --palette-10: #4c4c9e;
+      --palette-11: #af62c1;
+      --palette-12: #ad4681;
 
       --sheet-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
       --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -91,16 +95,18 @@
     --danger: #e0806e;
     --focus: #f1efe9;
 
-    --area-school: #e0aa38;
-    --area-sports: #59b7a4;
-    --area-volunteering: #e08a72;
-    --area-extra-1: #ab98d9;
-    --area-extra-2: #85b0e3;
-    --area-extra-3: #b4c46f;
-    --area-extra-4: #cf8fb2;
-    --area-extra-5: #d98bb0;
-    --area-extra-6: #7bc28c;
-    --area-extra-7: #93a8c2;
+    --palette-1: #b73f6e;
+    --palette-2: #d15b58;
+    --palette-3: #b0540e;
+    --palette-4: #b07c00;
+    --palette-5: #6e7a00;
+    --palette-6: #6f9d17;
+    --palette-7: #008f75;
+    --palette-8: #007c9e;
+    --palette-9: #4c88d3;
+    --palette-10: #4c4c9e;
+    --palette-11: #af62c1;
+    --palette-12: #ad4681;
 
     --sheet-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
     --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -960,25 +966,30 @@
   var DEFAULT_CATEGORY_NAMES = ["School", "Sports", "Volunteering"];
   var FAMILY_MEMBERS = ["Sara", "Ben", "Connor", "Cris"];
   var PERSON_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>';
-  var AREA_VAR = { School: "--area-school", Sports: "--area-sports", Volunteering: "--area-volunteering" };
-  var EXTRA_VARS = ["--area-extra-1", "--area-extra-2", "--area-extra-3", "--area-extra-4", "--area-extra-5", "--area-extra-6", "--area-extra-7"];
-  var X_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  var AREA_VAR = { School: "--palette-3", Sports: "--palette-7", Volunteering: "--palette-2" };
 
   // The full set of colors someone can assign a category, each backed by a
   // CSS custom property with its own light/dark values so a chosen color
-  // still reads correctly in both themes.
+  // still reads correctly in both themes. Spaced for maximum perceptual
+  // distinctness (validated with the data-viz palette method — even hues
+  // pinned to the same lightness weren't reliably distinguishable, so
+  // adjacent colors alternate lightness bands too).
   var PALETTE = [
-    { key: "amber", var: "--area-school" },
-    { key: "teal", var: "--area-sports" },
-    { key: "rust", var: "--area-volunteering" },
-    { key: "plum", var: "--area-extra-1" },
-    { key: "blue", var: "--area-extra-2" },
-    { key: "olive", var: "--area-extra-3" },
-    { key: "mauve", var: "--area-extra-4" },
-    { key: "rose", var: "--area-extra-5" },
-    { key: "forest", var: "--area-extra-6" },
-    { key: "slate", var: "--area-extra-7" }
+    { key: "rose", var: "--palette-1" },
+    { key: "rust", var: "--palette-2" },
+    { key: "gold", var: "--palette-3" },
+    { key: "amber", var: "--palette-4" },
+    { key: "olive", var: "--palette-5" },
+    { key: "forest", var: "--palette-6" },
+    { key: "teal", var: "--palette-7" },
+    { key: "sky", var: "--palette-8" },
+    { key: "blue", var: "--palette-9" },
+    { key: "plum", var: "--palette-10" },
+    { key: "orchid", var: "--palette-11" },
+    { key: "mauve", var: "--palette-12" }
   ];
+  var EXTRA_VARS = PALETTE.map(function (p) { return p.var; });
+  var X_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
   function areaVar(area) {
     if (AREA_VAR[area]) return AREA_VAR[area];
