@@ -216,6 +216,9 @@
     margin: 14px 0 0;
     padding-bottom: 12px;
   }
+  .family-tabs-row {
+    margin-top: 0;
+  }
 
   .tabs {
     display: flex;
@@ -879,6 +882,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 20.5V17l10.5-10.5 3.5 3.5L7.5 20.5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 8l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></svg>
       </button>
     </div>
+    <div class="tabs-row family-tabs-row">
+      <div class="tabs" id="familyTabs"></div>
+    </div>
   </header>
 
   <main id="main"></main>
@@ -1075,12 +1081,14 @@
     records: [],
     categories: [],
     activeTab: "All",
+    activeFamily: "All",
     query: "",
     editingId: null
   };
 
   var els = {
     tabs: document.getElementById("tabs"),
+    familyTabs: document.getElementById("familyTabs"),
     main: document.getElementById("main"),
     countBadge: document.getElementById("countBadge"),
     search: document.getElementById("search"),
@@ -1190,6 +1198,7 @@
   function render() {
     renderCount();
     renderTabs();
+    renderFamilyTabs();
     renderList();
   }
 
@@ -1215,8 +1224,25 @@
     });
   }
 
+  function renderFamilyTabs() {
+    var tabs = ["All"].concat(FAMILY_MEMBERS);
+    els.familyTabs.innerHTML = tabs.map(function (a) {
+      var active = a === state.activeFamily;
+      return '<button type="button" class="tab' + (active ? " active" : "") + '" data-family="' + escapeHtml(a) + '">' +
+        (a === "All" ? "" : PERSON_ICON) +
+        escapeHtml(a) + "</button>";
+    }).join("");
+    Array.prototype.forEach.call(els.familyTabs.querySelectorAll(".tab"), function (btn) {
+      btn.addEventListener("click", function () {
+        state.activeFamily = btn.getAttribute("data-family");
+        render();
+      });
+    });
+  }
+
   function matchesFilters(r) {
     if (state.activeTab !== "All" && (!r.areas || r.areas.indexOf(state.activeTab) === -1)) return false;
+    if (state.activeFamily !== "All" && (!r.family || r.family.indexOf(state.activeFamily) === -1)) return false;
     if (!state.query) return true;
     var q = state.query.toLowerCase();
     var haystack = [].concat(r.parents || [], r.children || [], r.areas || [], r.family || [], [r.notes || ""]).join(" • ").toLowerCase();
@@ -1353,7 +1379,7 @@
     els.email.value = record ? record.email || "" : "";
     els.notes.value = record ? record.notes || "" : "";
     formAreas = record ? (record.areas ? record.areas.slice() : []) : (state.activeTab !== "All" ? [state.activeTab] : []);
-    formFamily = record && record.family ? record.family.slice() : [];
+    formFamily = record && record.family ? record.family.slice() : (state.activeFamily !== "All" ? [state.activeFamily] : []);
     els.newAreaInput.value = "";
     els.newAreaWrap.classList.remove("show");
     els.deleteRow.style.display = record ? "block" : "none";
