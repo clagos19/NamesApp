@@ -1,0 +1,12 @@
+{
+  "description": "Players to pull news reports for. Grouped by sport, then by whether they're on a fantasy roster or just being watched.",
+  "last_updated": "2026-09-29",
+  "hockey": {
+    "drafted": [],
+    "watching": []
+  },
+  "football": {
+    "drafted": [],
+    "watching": []
+  }
+}
